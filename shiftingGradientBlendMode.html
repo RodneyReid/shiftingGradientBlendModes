@@ -1,0 +1,178 @@
+<!doctype html>
+<!--
+  This is a small, viewport aware, image-less loading/please wait animation,
+  which uses two moving radial gradients, and css3 blend-mode "color-burn" blending
+  to achieve an effect (which I believe) hasn't been done before on the web.
+  
+  It's also pleasing to look at.
+     - Rodney Reid, 11/20/2014
+
+  Update 04/16/2019 - 
+
+  It's interesting that almost 5 years later, Firefox and Chrome still render differently
+-->
+<html>
+<head>
+  <style>
+  BODY {
+    margin: 0;
+    overflow: hidden;
+    background-color: #000;
+  }
+
+  #dbody {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    color: #fff; 
+    background-color: transparent;
+    background-image: radial-gradient(
+      ellipse farthest-side at 66% -19%,
+      hsl(0, 0%, 100%) 0%,
+      hsl(254, 80%, 90%) 6%,
+      hsl(254, 28%, 80%) 25%,
+      hsl(254, 73%, 64%) 61%,
+      hsl(254, 100%, 38%) 87%,
+      hsl(254, 98%, 21%) 100%);
+
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-blend-mode: color-burn, color-burn, normal;
+    transform: translateZ(0);
+
+    box-shadow: inset 0 0 3vmin 3vmin rgba(0, 100, 100, 0.3);
+    border-radius: 50%;
+  }
+
+  #x { 
+    z-index: 10;
+    font: 4vw 'Helvetica', 'Arial', serif;
+    line-height: calc(100vh - 2vw);
+    height: calc(100vh - 2vw);
+    margin-left: auto;
+    margin-right: auto;
+    align: center;
+    text-align: center;
+    text-shadow: 0 0 1vmin rgb(255, 255, 255);
+    animation: biggerfonts 3.0s infinite cubic-bezier(.24, 1.47, .83, .67) alternate;
+  }
+
+  .loader, .loader:AFTER {
+    position: absolute;
+    left: calc((100vw - 85vmin) / 2);
+    top: calc((100vh - 85vmin) / 2);
+    width: 65vmin;
+    height: 65vmin;
+    border: 10vmin solid rgba(255, 255, 255, 0.6);
+    overflow: hidden;
+    z-index: 5;
+    border-top-style: double;
+    border-top-color: rgba(192, 192, 192, 0.5);
+    border-right-color: rgba(128, 128, 128, 0.4);
+    border-left-color: rgba(96, 96, 96, 0.3);
+    border-radius: 50%;
+    box-shadow: inset 0 0 15vmin 10vmin rgba(0, 100, 100, 0.7);
+    animation: spin 3.0s infinite linear;
+  }
+
+  .loader:HOVER { 
+    animation: scalespin 2.8s infinite cubic-bezier(.24, 1.47, .83, .67) alternate; 
+  }
+
+  @keyframes scalespin { 
+      0% { transform: scale(1.2) rotate(0deg); } 
+    100% { transform: scale(0.05) rotate(360deg); }
+  }
+
+  @keyframes spin { 
+      0% { transform: rotate(0deg); } 
+    100% { transform: rotate(360deg); }
+  }
+
+  @keyframes biggerfonts { 
+      0% { transform: scale(0.1); opacity: 1.0; } 
+    100% { transform: scale(3.0); opacity: 0.6; } 
+  }
+
+  </style>
+</head>
+<body id="body">
+  <div id="dbody" class="dbody">
+    <div id="x" contenteditable="true">Loading 0%</div>
+    <div class="loader loadStart" id="loader">&#160;</div>  
+  </div>
+  <script>
+  var loadpct = 0;
+  var hue = 0;
+  var hues = [0, 25, 50];
+  
+  var xpct = [66, 99/*, 20*/];
+  var ypct = [-19, 99, 20];
+  var xdir = [0.1, 0.1, -0.1];
+  var ydir = [-0.1, 0.1, -0.1];
+  
+  var start = ["radial-gradient(ellipse farthest-side at ", 
+               "radial-gradient(ellipse farthest-side at ",
+               "radial-gradient(ellipse farthest-side at "
+  ];
+
+  var segs = [
+    [[hue, 0, 100, 0], [hue, 80, 90, 6], [hue, 28, 80, 25], [hue, 73, 64, 61], [hue, 100, 38, 87], [hue, 98, 21, 100]],
+    [[hue, 0, 100, 0], [hue, 80, 90, 6], [hue, 28, 80, 25], [hue, 73, 64, 61], [hue, 100, 38, 87], [hue, 98, 21, 100]],
+    [[hue, 0, 100, 0], [hue, 80, 90, 6], [hue, 28, 80, 25], [hue, 73, 64, 61], [hue, 100, 38, 87], [hue, 98, 21, 100]]
+  ];
+
+  var changeColor = function() {
+    for (var y = 0; y !== hues.length; y++) {
+      hues[y] = Math.floor(Math.random() * 360);
+    }
+    loadpct += (loadpct === 100) ? -100 : 10;
+    document.getElementById('x').innerHTML = "loading " + loadpct + "%";  
+  };
+  
+  var moveGradient = function() {
+    var gradStr = '';
+
+    for (var y = 0; y!== xpct.length; y++) {
+      xstr = start[y] + xpct[y] + "% " + ypct[y] + "%";
+      
+      for (var z = 0; z !== segs[y].length; z++) {
+        xstr+=  ",hsl(" + hues[y] + ',' + segs[y][z][1] + '%,' + segs[y][z][2] + '%)' + segs[y][z][3] + "%"; 
+      }
+      
+      xpct[y]+= xdir[y];
+
+      if (xdir[y] > 0) { 
+        if (xpct[y] > 98) { 
+          xdir[y] = -0.1; 
+          xpct[y]+= xdir[y] * 2; 
+        }
+      } else {
+        if (xpct[y] < 0) { 
+          xdir[y] = 0.1; 
+          xpct[y]+= xdir[y] * 2; 
+        }
+      }
+      ypct[y]+= ydir[y];
+      
+      if (ydir[y] > 0) { 
+        if (ypct[y] > 98) { 
+          ydir[y] = -0.1; 
+          ypct[y]+= ydir[y] * 2;
+        }
+      } else {
+        if (ypct[y] < 0) { 
+          ydir[y] = 0.1;
+          ypct[y]+= ydir[y] * 2; 
+        }
+      }
+      gradStr += xstr + ")" + ((y + 1 !== xpct.length) ? ',' : '');
+    }
+    document.getElementById('dbody').style.backgroundImage = gradStr;
+  };
+
+  setInterval(moveGradient, 10);  
+  setInterval(changeColor, 10000);
+  </script>
+  </body>
+</html>
